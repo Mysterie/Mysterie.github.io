@@ -36,7 +36,7 @@ ReleaseDC(0, hScreenDC);
 
 Et ensuite je débugge tout ça, donc dans notre programme on commence par un appel a la fonction [http://msdn.microsoft.com/en-us/library/dd145078%28VS.85%29.aspx](SetPixel) qui se trouve dans gdi32.dll. La [http://fr.wikipedia.org/wiki/Graphics_Device_Interface](GDI) permet de faire le lien entre les applications et les pilotes graphiques. et à la fin de gdi32!SetPixel on as un appel à une petite routine assez spécifique:
 
-{% Assembly C %}
+{% highlight Assembly %}
 mov eax, 111Ah
 mov edx, 7FFE0300h
 call dword ptr [edx] ; ntdll!KiFastSystemCall
