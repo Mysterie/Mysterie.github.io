@@ -4,11 +4,11 @@ title:  "A la quête du frame buffer"
 date:   2009-07-22 15:08:00 +0100
 categories: [security]
 ---
-C'est l'été, dehors il fait beau, les oiseaux chantent. Autant de bonne raison pour resté chez moi et coder.
+C'est l'été, dehors il fait beau, les oiseaux chantent. Autant de bonnes raisons pour rester chez moi et coder.
 
-Toujours à la recherche de mon frame buffer, il existe quelques méthodes pour récupérer l'adresse physique de celui-ci. Mais rien pour l'adresse virtuelle. J'ai eu l'idée d'envoyer des `IOCTL` au driver miniport de ma carte graph' pour qu'il me renvoi les informations que je recherche. Pour se faire j'utilise la fonction [DeviceioControl()](https://docs.microsoft.com/fr-fr/windows/desktop/api/ioapiset/nf-ioapiset-deviceiocontrol) qui nécessite un handle. Ce handle on le récupère avec [CreateFile("\\\\.\\DISPLAY1, ...);](https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea) Sauf qu'en retour on a le droit à un beau "Access denied". ouch...
+Toujours à la recherche de mon frame buffer, il existe quelques méthodes pour récupérer l'adresse physique de celui-ci, mais rien pour l'adresse virtuelle. J'ai eu l'idée d'envoyer des `IOCTL` au driver miniport de ma carte graph' pour qu'il me renvoie les informations que je recherche. Pour ce faire j'utilise la fonction [DeviceioControl()](https://docs.microsoft.com/fr-fr/windows/desktop/api/ioapiset/nf-ioapiset-deviceiocontrol) qui nécessite un handle. Ce handle, on le récupère avec [CreateFile("\\\\.\\DISPLAY1, ...);](https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea) sauf qu'en retour, on a le droit à un beau "Access denied". ouch...
 
-`DISPLAY1` est un lien symbolique vers `\Device\Video0`, chaques devices est lié à un driver, sous VMware on a:
+`DISPLAY1` est un lien symbolique vers `\Device\Video0`, chaque device est lié à un driver, sous VMware on a:
 
 ```
 kd> !devobj Video0
@@ -76,7 +76,7 @@ Hop un petit schéma pour les autistes:
 |_________|             La carte Graph \o/            |___________|
 ```
 
-Grâce a un petit script made in Invanlef0u on va pouvoir retrouver les handles qui nous intéressent. J'ai aussi [codé un driver](http://mysterie.fr/prog/blog/dispHandle.htm) qui dump l'object table du process System.
+Grâce à un petit script made in Invanlef0u on va pouvoir retrouver les handles qui nous intéressent. J'ai aussi [codé un driver](http://mysterie.fr/prog/blog/dispHandle.htm) qui dump l'object table du process System.
 
 ```
 kd>bp nt!zwopenfile ".printf \"ZwOpenFile \"; !ustr poi(poi(@esp+4+2*4)+2*4);"
@@ -95,9 +95,9 @@ Object: 816e48e8  Type: (817b8730) File
         HandleCount: 1  PointerCount: 2
 ```
 
-L'handle est ouvert avec `DesiredAccess = FILE_SUPERSEDED` et `ShareAccess = 0`. Aïe pas moyen d'interagir avec. D'ailleurs quand le device est chargé on se rend compte que le handle a été refermé, il y a juste un pointeur sur l'objet video0. Donc on ne cherche pas dans la bonne direction... :(
+L'handle est ouvert avec `DesiredAccess = FILE_SUPERSEDED` et `ShareAccess = 0`. Aïe pas moyen d'interagir avec. D'ailleurs, quand le device est chargé, on se rend compte que le handle a été refermé. Il y a juste un pointeur sur l'objet `video0`. Donc, on ne cherche pas dans la bonne direction... :(
 
-Il existe une fonction noyau équivalente à [DeviceioControl](https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/nf-ntifs-ntdeviceiocontrolfile) qui est [IoBuildDeviceIoControlRequest](https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/wdm/nf-wdm-iobuilddeviceiocontrolrequest) (merci [Overclok](http://0vercl0k.tuxfamily.org/bl0g/) pour l'indication). Elle crée des irp de type `IRP_MJ_INTERNAL_DEVICE_CONTROL` et `IRP_MJ_DEVICE_CONTROL`. C'est le deuxième type qui nous intéresse, le driver vidéo n'implante pas la première. Et pour cette fonction nul besoin d'un handle, un pointeur vers l'objet video0 suffit.
+Il existe une fonction noyau équivalente à [DeviceioControl](https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/nf-ntifs-ntdeviceiocontrolfile) qui est [IoBuildDeviceIoControlRequest](https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/wdm/nf-wdm-iobuilddeviceiocontrolrequest) (merci [Overclok](http://0vercl0k.tuxfamily.org/bl0g/) pour l'indication). Elle crée des irp de type `IRP_MJ_INTERNAL_DEVICE_CONTROL` et `IRP_MJ_DEVICE_CONTROL`. C'est le deuxième type qui nous intéresse, le driver vidéo n'implante pas la première. Et pour cette fonction, nul besoin d'un handle, un pointeur vers l'objet video0 suffit.
 
 Je crée un autre bp sur la fonction [IoGetDeviceObjectPointer()](https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/wdm/nf-wdm-iogetdeviceobjectpointer) pour trouver ce pointeur au boot.
 
@@ -155,13 +155,13 @@ f86d8020  00f1f2f7 00f2f3f7 00f4f5f9 00f6f8f7
 f86d8030  00f7f7f5 00f7f8f3 00f5f6f0 00f5f6f0
 ```
 
-Voilà les premiers pixels de l'écran. Mais ce qu'il y a de plus intéressant c'est la taille du frame buffer par rapport à la taille de la mémoire vidéo. 16777216-1920000 = 14857216 octet. Donc *14,857Mo* dans le kernel space non utilisé où on peut y cacher plein de chose. Étonnant non?
+Voilà les premiers pixels de l'écran. Mais ce qu'il y a de plus intéressant c'est la taille du frame buffer par rapport à la taille de la mémoire vidéo. `16777216-1920000 = 14857216` octet. Donc **14,857Mo** dans le kernel space non utilisé où on peut y cacher plein de choses. Étonnant, non?
 
-J'utilise ObReferenceObjectByName() fonction non documenté, avec le nom du driver miniport "vmx_svga", pour récupérai le pointeur sur le device video0. D'ailleurs grâce à cette fonction on pourrai lister tout les devices chargés, et leurs envoyé des IOCTL, moi je me suis limité à la vidéo.
+J'utilise `ObReferenceObjectByName()` fonction non documentée, avec le nom du driver miniport "vmx_svga", pour récupérer le pointeur sur le device video0. D'ailleurs, grâce à cette fonction, on pourrait lister tous les devices chargés, et leur envoyer des IOCTL, moi je me suis limité à la vidéo.
 
-Si vous voulez tester le code de votre coté, pour retrouver le nom du driver vidéo il suffit de chercher dans les registres.
+Si vous voulez tester le code de votre côté, pour retrouver le nom du driver vidéo il suffit de chercher dans les registres.
 `HKEY_LOCAL_MACHINE\HARDWARE\DEVICEMAP\VIDEO clef \Device\Video0` contient un identifiant chez moi `E27CB637-47DA-4B2B-8B0D-50E8CD7B9FAC`. On s'en sert ensuite
-`HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Video\{E27CB637-47DA-4B2B-8B0D-50E8CD7B9FAC}\Video` et la clef Service contient le nom de notre driver miniport. Donc dans mon code il faudra remplacer le nom du driver "vmx_svga" par le votre.  
-Oui j'ai baclé la fin, j'éditerai surement le post pour automatiser la recherche, ou pas.
+`HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Video\{E27CB637-47DA-4B2B-8B0D-50E8CD7B9FAC}\Video` et la clef `Service` contient le nom de notre driver miniport. Donc dans mon code il faudra remplacer le nom du driver "vmx_svga" par le vôtre.  
+Oui j'ai bâclé la fin. J'éditerai surement le post pour automatiser la recherche, ou pas.
 
 Code: framebuf.sys

@@ -4,11 +4,12 @@ title:  "D3D Hooking"
 date:   2009-05-21 22:38:00 +0100
 categories: [security]
 ---
-En se moment je m'intéresse à la programmation [Direct3D](http://fr.wikipedia.org/wiki/Direct3D). J'ai réalisé un programme bidon qui affiche un symbole en 3d et le fait tourner sur lui même. Pas d'anti-aliasing ou autre joyeuseté du style je me suis simplement servi de vertex (une vertex/vertice pourrais se résumer à un point). Le but de ce programme est d'avoir une base pour réaliser ensuite un hook sur la fonction manipulant les vertex et leurs informations histoire de retrouver les couleurs et coordonnées des points du symbole affiché.
+En ce moment, je m'intéresse à la programmation [Direct3D](http://fr.wikipedia.org/wiki/Direct3D). J'ai réalisé un programme bidon qui affiche un symbole en 3d et le fait tourner sur lui-même. Pas d'anti-aliasing ou autre joyeuseté du style. Je me suis simplement servi de vertex (une vertex/vertice pourrait se résumer à un point). Le but de ce programme est d'avoir une base pour réaliser ensuite un hook sur la fonction manipulant les vertex et leurs informations, histoire de retrouver les couleurs et coordonnées des points du symbole affiché.
 
-Chaque point de la figure est stoqué dans un tableau de CUSTOMVERTEX, la structure CUSTOMVERTEX est défini par la méthode [SetFVF()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nf-d3d9-idirect3ddevice9-setfvf) qui se trouve dans l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9). Je défini mon point par D3DFVF_XYZ|D3DFVF_DIFFUSE se qui représente { (float)X, (float)Y, (float)Z, (DWORD)color, }
+Chaque point de la figure est stocké dans un tableau de `CUSTOMVERTEX`, la structure `CUSTOMVERTEX` est définie par la méthode [SetFVF()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nf-d3d9-idirect3ddevice9-setfvf) qui se trouve dans l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9).
+Je définis mon point par `D3DFVF_XYZ|D3DFVF_DIFFUSE` ce qui représente `{ (float)X, (float)Y, (float)Z, (DWORD)color, }`.
 
-Une autre méthode intéressante est [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource) faisant partie du même objet, elle va aller toucher au buffer contenant touts les points, et cela à chaque fois qu'on affiche une image. Il suffit donc d'injecter une dll dans le programme et de retrouver IDirect3DDevice9::SetStreamSource() pour la hooker. Sauf que l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9) est en mémoire, où? impossible à savoir de l'extérieur.
+Une autre méthode intéressante est [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource) faisant partie du même objet. Elle va aller toucher au buffer contenant tous les points, et cela à chaque fois qu'on affiche une image. Il suffit donc d'injecter une dll dans le programme et de retrouver `IDirect3DDevice9::SetStreamSource()` pour la hooker. Sauf que l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9) est en mémoire, où? Impossible à savoir de l'extérieur.
 
 Le code important dans le programme est:
 
@@ -26,7 +27,7 @@ gPd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 1);
 gPd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 3, 1);
 {% endhighlight %}
 
-Voici la version assembleur pour l'appel à gPd3dDevice->SetStreamSource(0, gVertexBuff, 0, sizeof(CUSTOMVERTEX));
+Voici la version assembleur pour l'appel à `gPd3dDevice->SetStreamSource(0, gVertexBuff, 0, sizeof(CUSTOMVERTEX));`.
 
 {% highlight Assembly %}
 mov   edx,dword ptr ds:[gVertexBuff] ; on met l'adresse de gVertexBuff dans edx
@@ -41,14 +42,14 @@ mov   eax,dword ptr ds:[ecx+190] ; 64eme fonction de l'objet d3dDevice
 call  eax ; gPd3dDevice->SetStreamSource(0, edx, 0, 10);
 {% endhighlight %}
 
-Donc l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9) contient une table de fonction, la fonction SetStreamSource est la 64eme et fait référence au module d3d9.dll. En cherchant un peu je retrouve comment est initialisé l'objet. En fait il se base sur une autre table de fonction qui se situe aussi dans le module d3d9.dll et dont SetStreamSource est la 134eme fonction. Comme je ne peux pas savoir comment est structuré l'objet en mémoire je me baserai sur la table de fonction de d3d9.dll pour retrouver SetStreamSource.
+Donc l'objet [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9) contient une table de fonctions. La fonction SetStreamSource est la 64eme et fait référence au module d3d9.dll. En cherchant un peu, je retrouve comment est initialisé l'objet. En fait, il se base sur une autre table de fonctions qui se situe aussi dans le module d3d9.dll et dont SetStreamSource est la 134eme fonction. Comme je ne peux pas savoir comment est structuré l'objet en mémoire, je me baserai sur la table de fonctions de d3d9.dll pour retrouver SetStreamSource.
 
-La table se situe dans la section .text à l'offset 0x15C38, C'est hardcodé donc c'est moche et ça ne marchera que pour certaine version de la librairie. mais je suis obliger de procéder de cette manière car SetStreamSource n'est pas exporté. D'ailleurs [la plupart des codes](http://www.ring3circus.com/downloads/direct3d-hooking/) [que j'ai trouvé](http://usl.sis.pitt.edu/wjj/UTClient/Hooking%20Direct3d.doc) utilisent des offsets.  
-Sinon il y a plusieurs alternatives, dont le [hook de l'IAT sur des fonctions de type d3d8thk.* ](http://www.codeproject.com/KB/system/Hooking_DirectX_COM.aspx) qui sont d'anciennes fonctions de d3d8.dll utilisés dans la version neuf par souci de compatibilité. ou encore [hooker la fonction Direct3DCreate9](http://hi.baidu.com/shangxing214/blog/item/48ec3fa645c25b9dd04358a7.html) qui elle est exporté.
+La table se situe dans la section .text à l'offset `0x15C38`. C'est hardcodé donc c'est moche et ça ne marchera que pour certaines versions de la librairie. Mais je suis obligé de procéder de cette manière car SetStreamSource n'est pas exporté. D'ailleurs, [la plupart des codes](http://www.ring3circus.com/downloads/direct3d-hooking/) [que j'ai trouvé](http://usl.sis.pitt.edu/wjj/UTClient/Hooking%20Direct3d.doc) utilisent des offsets.  
+Sinon, il y a plusieurs alternatives dont le [hook de l'IAT sur des fonctions de type d3d8thk.* ](http://www.codeproject.com/KB/system/Hooking_DirectX_COM.aspx) qui sont d'anciennes fonctions de d3d8.dll utilisées dans la version 9 par souci de compatibilité. Ou encore [hooker la fonction Direct3DCreate9](http://hi.baidu.com/shangxing214/blog/item/48ec3fa645c25b9dd04358a7.html) qui elle est exportée.
 
-Je préfère procéder par un hook inline, sodomite inside. Donc la DLL que je vais injecté vas retrouver [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource), la rediriger vers une fonction intermédiaire qui aura pour but de récupérer les arguments de la pile. Comme la DLL injecté fait partie d'un nouveau thread je vais faire un [Sleep(100)](https://docs.microsoft.com/en-us/windows/desktop/api/synchapi/nf-synchapi-sleep). Les autres thread du programme vont avoir le temps de s'exécuter et d'utiliser ma fonction hooké et c'est gagné. Après le [Sleep()](https://docs.microsoft.com/en-us/windows/desktop/api/synchapi/nf-synchapi-sleep) j'aurai accès au argument de [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource).
+Je préfère procéder par un hook inline. Donc la DLL que je vais injecter va retrouver [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource), la rediriger vers une fonction intermédiaire qui aura pour but de récupérer les arguments de la pile. Comme la DLL injectée fait partie d'un nouveau thread, je vais faire un [Sleep(100)](https://docs.microsoft.com/en-us/windows/desktop/api/synchapi/nf-synchapi-sleep). Les autres thread du programme vont avoir le temps de s'exécuter et d'utiliser ma fonction hookée et c'est gagné. Après le [Sleep()](https://docs.microsoft.com/en-us/windows/desktop/api/synchapi/nf-synchapi-sleep) j'aurai accès aux arguments de [SetStreamSource()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setstreamsource).
 
-On aura donc l'adresse des objets [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9), [IDirect3DVertexBuffer9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nn-d3d9helper-idirect3dvertexbuffer9) ainsi qu'a la taille du CUSTOMVERTEX. Ensuite on utilise les objets comme s'ils nous appartenaient. Donc pour avoir accès aux fameux points de la figure il suffit de faire un:
+On aura donc l'adresse des objets [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9), [IDirect3DVertexBuffer9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nn-d3d9helper-idirect3dvertexbuffer9) ainsi que la taille du `CUSTOMVERTEX`. Ensuite on utilise les objets comme s'ils nous appartenaient. Donc, pour avoir accès aux fameux points de la figure, il suffit de faire un:
 
 {% highlight C %}
 // pVertices contiendra l'adresse du début de la mémoire ou sont stoqué les vertex
@@ -57,9 +58,9 @@ gVertexBuff->Lock(0, vertexSize, (void **)&pVertices;, 0);
 gVertexBuff->Unlock();
 {% endhighlight %}
 
-Ensuite on peut manipuler ces objets à volonté, lire/changer la position des points, la couleur etc... Le code est disponible mais ça reste un PoC, je change juste la couleur du symbole rien d'extraordinaire. J'ai surtout fait ça pour cheater à l'iut :] For Aiur!
+Ensuite on peut manipuler ces objets à volonté, lire/changer la position des points, la couleur etc... Le code est disponible mais ça reste un PoC. Je change juste la couleur du symbole rien d'extraordinaire. J'ai surtout fait ça pour cheater à l'iut :] For Aiur!
 
-Version de d3d9: 5.3.2600.2180  
+Version de d3d9: `5.3.2600.2180`  
 Le programme: d3d.exe - source  
 La dll à injecter: d3d.dll - source  
 Le screen: ici  

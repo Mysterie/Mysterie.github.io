@@ -12,6 +12,6 @@ rop.pdf
 rop.odp  
 rop.ppt
 
-Et pour ceux qui sont intéressés par le sujet je vous conseil aussi [la lecture de ce papier](https://trailofbits.files.wordpress.com/2010/04/practical-rop.pdf) réalisé par Dino dai zovi il y a un mois.
+Et pour ceux qui sont intéressés par le sujet je vous conseille aussi [la lecture de ce papier](https://trailofbits.files.wordpress.com/2010/04/practical-rop.pdf) réalisé par Dino dai zovi il y a un mois.
 
-Pour les autres conférences, les slides devraient être eux aussi en ligne d'ici peu. Ainsi que les épreuves du challenge ethical hacking (en tout cas les résolus).
+Pour les autres conférences, les slides devraient être eux aussi en ligne d'ici peu ainsi que les épreuves du challenge ethical hacking (en tout cas les résolus).
