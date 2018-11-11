@@ -1,0 +1,17 @@
+---
+layout: post
+title:  "Return Oriented Programming"
+date:   2010-06-06 17:58:00 +0100
+categories: [security]
+---
+Ce week-end se tenait à Maubeuge les rssil (Rencontres des Solutions de Sécurité et d'Informatique Libre).  
+Je vous encourage à y aller l'an prochain. Il y avait une très bonne ambiance, des conf intéressantes et j'ai pu y rencontrer pas mal de monde. Je tiens à remercier tout particulièrement les organisateurs de l'évènement pour leur accueil et leur organisation.
+
+Pour ceux qui veulent récupérer mes slides ou tout simplement ceux qui n'ont pas pu assister à la conférence:  
+rop.pdf  
+rop.odp  
+rop.ppt
+
+Et pour ceux qui sont intéressés par le sujet je vous conseil aussi [la lecture de ce papier](https://trailofbits.files.wordpress.com/2010/04/practical-rop.pdf) réalisé par Dino dai zovi il y a un mois.
+
+Pour les autres conférences, les slides devraient être eux aussi en ligne d'ici peu. Ainsi que les épreuves du challenge ethical hacking (en tout cas les résolus).
