@@ -11,7 +11,7 @@ __Crackme Niveau 1:__
 
 Le crackme n'a aucun mécanisme d'anti-debug. Ce qui lui est donné en entrée est comparé directement à une chaîne en mémoire. Rien de bien compliqué en soit:
 
-{% highlight C %}
+{% highlight c %}
 GetWindowText(hEdit, text, 255);
 theSecret[0]++;
 theSecret[2]++;
@@ -48,7 +48,7 @@ __Crackme Niveau 4:__
 Ce niveau est destiné à des personnes ayant l'habitude de ce genre d'épreuve. La difficulté principale de ce challenge est donc de débugger le programme (l'analyser). J'ai mis beaucoup de routine d'anti-débug. Tout d'abord à l'entrée du programme, j'ai incrusté des instructions assembleur pour modifier la signature de l'exécutable (ces instructions ne sont jamais exécutées). Le but est de faire croire que l'exécutable est packé, c'est-à-dire qu'il est compressé par un autre logiciel.  
 Ensuite, j'appelle une fonction spéciale un peu partout dans le code de mon programme. (junk code)
 
-{% highlight C %}
+{% highlight c %}
 void brack() {
     __asm {
         _emit 0xEB;  // 0xEB01 = jmp short relatif saute au dessus
@@ -60,7 +60,7 @@ void brack() {
 
 Le programme crée ensuite un thread. La fonction du thread est la suivante:
 
-{% highlight C %}
+{% highlight c %}
 while(1) {
     brack();
     Sleep(1000);
@@ -85,7 +85,7 @@ Dans le cas où un débugger serait présent au démarrage du programme ou s'il 
 
 La fonction `IsDebuggerPresent` est aussi appelée dans le programme. Elle est appelée indirectement (récupération de l'adresse de la fonction dynamique).
 
-{% highlight C %}
+{% highlight c %}
 GetProcAddress(GetModuleHandle("Kernel32.dll"), "IsDebuggerPresent");
 {% endhighlight %}
 

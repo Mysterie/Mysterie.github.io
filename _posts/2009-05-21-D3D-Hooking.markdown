@@ -13,7 +13,7 @@ Une autre méthode intéressante est [SetStreamSource()](https://docs.microsoft.
 
 Le code important dans le programme est:
 
-{% highlight C %}
+{% highlight c %}
 // (LPDIRECT3DDEVICE9)		gPd3dDevice
 // (LPDIRECT3DVERTEXBUFFER9)	gVertexBuff
 
@@ -29,7 +29,7 @@ gPd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 3, 1);
 
 Voici la version assembleur pour l'appel à `gPd3dDevice->SetStreamSource(0, gVertexBuff, 0, sizeof(CUSTOMVERTEX));`.
 
-{% highlight Assembly %}
+{% highlight nasm %}
 mov   edx,dword ptr ds:[gVertexBuff] ; on met l'adresse de gVertexBuff dans edx
 mov   eax,dword ptr ds:[gPd3dDevice] ; on met l'adresse de gPd3dDevice dans eax
 mov   ecx,dword ptr ds:[eax] ; ecx pointe vers la table de fonction de l'objet DIRECT3DDEVICE9
@@ -51,7 +51,7 @@ Je préfère procéder par un hook inline. Donc la DLL que je vais injecter va r
 
 On aura donc l'adresse des objets [IDirect3DDevice9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nn-d3d9-idirect3ddevice9), [IDirect3DVertexBuffer9](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nn-d3d9helper-idirect3dvertexbuffer9) ainsi que la taille du `CUSTOMVERTEX`. Ensuite on utilise les objets comme s'ils nous appartenaient. Donc, pour avoir accès aux fameux points de la figure, il suffit de faire un:
 
-{% highlight C %}
+{% highlight c %}
 // pVertices contiendra l'adresse du début de la mémoire ou sont stoqué les vertex
 // gVertexBuff représente l'objet IDirect3DVertexBuffer9
 gVertexBuff->Lock(0, vertexSize, (void **)&pVertices;, 0);

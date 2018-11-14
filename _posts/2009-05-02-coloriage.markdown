@@ -25,7 +25,7 @@ Physical [0xec000000 - 0xec800000]
 Biensûr ce sont des adresses physiques, on peut ensuite utiliser la fonction [MmMapIoSpace](http://msdn.microsoft.com/en-us/library/aa932608.aspx) pour y accéder mais ça reviendrait à faire une copie de la mémoire physique vers la mémoire virtuelle et on se retrouve avec DEUX buffers vidéo en ram :/.   
 Alors on va essayer de retrouver le premier qui est déjà en mémoire. J'ai donc fait un programme en C qui affiche un pixel rose en haut à gauche de l'écran.
 
-{% highlight C %}
+{% highlight c %}
 //Rien de complexe pour le programme.
 HDC hScreenDC;
 hScreenDC = GetDC(0); // screen
@@ -36,7 +36,7 @@ ReleaseDC(0, hScreenDC);
 
 Et ensuite je débugge tout ça. Donc dans notre programme on commence par un appel a la fonction [SetPixel](http://msdn.microsoft.com/en-us/library/dd145078%28VS.85%29.aspx) qui se trouve dans gdi32.dll. La [GDI](http://fr.wikipedia.org/wiki/Graphics_Device_Interface) permet de faire le lien entre les applications et les pilotes graphique et à la fin de gdi32!SetPixel on a un appel à une petite routine assez spécifique:
 
-{% highlight Assembly %}
+{% highlight nasm %}
 mov eax, 111Ah
 mov edx, 7FFE0300h
 call dword ptr [edx] ; ntdll!KiFastSystemCall
